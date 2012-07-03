@@ -73,6 +73,24 @@ class Silverpop
         return $this->request($xml);
     }
 
+    public function updateRecipient($email, $databaseId, $fields = array())
+    {
+        $xml = "<UpdateRecipient>";
+        $xml .= "<LIST_ID>$databaseId</LIST_ID>";
+        $xml .= "<OLD_EMAIL>$email</OLD_EMAIL>";
+
+        foreach ($fields as $name => $value) {
+            $xml .= "<COLUMN>";
+            $xml .= "<NAME>$name</NAME>";
+            $xml .= "<VALUE>$value</VALUE>";
+            $xml .= "</COLUMN>";
+        }
+
+        $xml .= "</UpdateRecipient>";
+
+        return $this->request($xml);
+    }
+
     public function addContactToContactList($email, $listId)
     {
         $xml = "<AddContactToContactList>";
