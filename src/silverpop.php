@@ -1,5 +1,8 @@
 <?php
 
+require_once "silverpop_api_exception.php";
+
+
 /**
  * Silverpop API
  *
@@ -67,7 +70,7 @@ class Silverpop
         $xml .= "</COLUMN>";
         $xml .= "</AddRecipient>";
 
-        $result = $this->request($xml);
+        return $this->request($xml);
     }
 
     public function addContactToContactList($email, $listId)
@@ -80,7 +83,7 @@ class Silverpop
         $xml .= "</COLUMN>";
         $xml .= "</AddContactToContactList>";
 
-        $result = $this->request($xml);
+        return $this->request($xml);
     }
 
     public function removeRecipient($email, $listId)
@@ -90,7 +93,7 @@ class Silverpop
         $xml .= "<EMAIL>$email</EMAIL>";
         $xml .= "</RemoveRecipient>";
 
-        $result = $this->request($xml);
+        return $this->request($xml);
     }
 
     protected function getUrl()
@@ -122,9 +125,9 @@ class Silverpop
         $result = curl_exec($ch);
 
         if (($pos = stripos($result, '<Envelope>')) === NULL) {
-            echo "Unspecified error diagnostic. Output dump: $result";
+            throw new SilverpopApiException('Unspecified error.');
 
-            return array();
+            return false;
         }
 
         $epos = stripos($result, '</Envelope>') + strlen('</Envelope>');
@@ -138,24 +141,24 @@ class Silverpop
         $errorid = $response->getElementsByTagName('errorid');
 
         if ($success->length && strtoupper($response->getElementsByTagName('SUCCESS')->item(0)->nodeValue) == 'FALSE') {
-            $err_arr = array();
+            $error = array();
             $msg = 'API call failed.';
 
             // did we get an error message?
             if ($fault->length) {
-                $err_arr['@fault'] = $response->getElementsByTagName('FaultString')->item(0)->nodeValue;
-                $msg .= ' Diagnostic: ' . $err_arr['@fault'];
+                $error['message'] = $response->getElementsByTagName('FaultString')->item(0)->nodeValue;
+                $msg .= ' Diagnostic: ' . $error['message'];
             }
 
             // did we get an error number?
             if ($errorid->length) {
-                $err_arr['@errorid'] = $response->getElementsByTagName('errorid')->item(0)->nodeValue;
-                $msg .= ' Error code: ' . $err_arr['@errorid'];
+                $error['errorid'] = $response->getElementsByTagName('errorid')->item(0)->nodeValue;
+                $msg .= ' Error code: ' . $error['errorid'];
             }
 
-            echo $msg;
+            throw new SilverpopApiException($msg);
 
-            return array(false, $response);
+            return false;
         }
 
         return $response;
